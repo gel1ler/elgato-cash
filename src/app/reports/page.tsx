@@ -3,9 +3,10 @@ import { ReportsFilterForm, ReportsStats, WorkersServicesTable } from '@/compone
 
 function firstDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1) }
 
-export default async function ReportsPage({ searchParams }: { searchParams: { start?: string, end?: string } }) {
-  const start = searchParams.start ? new Date(searchParams.start) : firstDay(new Date())
-  const end = searchParams.end ? new Date(searchParams.end) : new Date()
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ start?: string, end?: string }> }) {
+  const params = await searchParams
+  const start = params.start ? new Date(params.start) : firstDay(new Date())
+  const end = params.end ? new Date(params.end) : new Date()
 
   const svc = await prisma.serviceEntry.groupBy({
     by: ['workerId', 'method'],

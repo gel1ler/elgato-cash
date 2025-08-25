@@ -33,11 +33,22 @@ export async function removeWorkerFromTable(formData: FormData) {
 
   if (!shiftId || !workerId) return
 
-  // Проверяем, что смена не закрыта
   const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
   if (!shift || shift.closingCash !== null) return
 
-  // Просто обновляем страницу - мастер автоматически исчезнет из таблицы
+  await prisma.$transaction(async (tx) => {
+    // Удаляем все услуги этого работника в данной смене
+    await tx.serviceEntry.deleteMany({ where: { shiftId, workerId } })
+
+    // Удаляем все выплаты этого работника в данной смене
+    await tx.payout.deleteMany({ where: { shiftId, workerId } })
+
+    // Если работник был админом смены — снимаем
+    if (shift.adminId === workerId) {
+      await tx.shift.update({ where: { id: shiftId }, data: { adminId: null } })
+    }
+  })
+
   revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -153,5 +164,55 @@ export async function closeShift(formData: FormData) {
   if (t.cashEnd < 0) return
 
   await prisma.shift.update({ where: { id: shiftId }, data: { closingCash: t.cashEnd } })
+  revalidatePath(`/shifts/${shiftId}`)
+}
+
+export async function deleteShift(formData: FormData) {
+  const shiftId = Number(formData.get('shiftId'))
+  if (!shiftId) return
+
+  // Проверяем, что смена не закрыта
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift || shift.closingCash !== null) return
+
+  // Удаляем все связанные записи
+  await prisma.serviceEntry.deleteMany({ where: { shiftId } })
+  await prisma.productSale.deleteMany({ where: { shiftId } })
+  await prisma.payout.deleteMany({ where: { shiftId } })
+
+  // Теперь удаляем саму смену
+  await prisma.shift.delete({ where: { id: shiftId } })
+  revalidatePath('/shifts')
+}
+
+export async function updateService(formData: FormData) {
+  const id = Number(formData.get('id'))
+  const shiftId = Number(formData.get('shiftId'))
+  const hasAmount = formData.has('amount')
+  const hasMethod = formData.has('method')
+
+  if (!id || !shiftId) return
+
+  // Проверяем, что смена не закрыта
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift || shift.closingCash !== null) return
+
+  const data: { amount?: number; method?: string } = {}
+
+  if (hasAmount) {
+    const amount = toNumber(formData.get('amount'))
+    if (amount < 0) return
+    data.amount = amount
+  }
+
+  if (hasMethod) {
+    const method = String(formData.get('method'))
+    if (!method) return
+    data.method = method
+  }
+
+  if (Object.keys(data).length === 0) return
+
+  await prisma.serviceEntry.update({ where: { id }, data })
   revalidatePath(`/shifts/${shiftId}`)
 }

@@ -31,7 +31,7 @@ export function TableBody({ children, className = '' }: { children: React.ReactN
 
 export function TableRow({ children, className = '', ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={`hover:bg-gray-50 ${className}`} {...props}>
+    <tr className={`${className}`} {...props}>
       {children}
     </tr>
   )

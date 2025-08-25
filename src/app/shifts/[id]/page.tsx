@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { computeTotals } from '@/lib/utils'
 import { ShiftHeader, ServicesTable, SalesTable, PayoutsTable, ShiftSummary } from '@/components'
+import { Tabs } from '@/components/ui'
 
 export default async function ShiftView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -64,38 +65,58 @@ export default async function ShiftView({ params }: { params: Promise<{ id: stri
     createdAt: payout.createdAt
   }))
 
+  const tabs = [
+    {
+      id: 'services',
+      label: 'Услуги',
+      content: (
+        <ServicesTable
+          shift={serializedShift}
+          services={serializedServiceEntries}
+          workers={masters}
+        />
+      )
+    },
+    {
+      id: 'sales',
+      label: 'Продажи',
+      content: (
+        <SalesTable
+          shift={serializedShift}
+          productSales={serializedProductSales}
+        />
+      )
+    },
+    {
+      id: 'payouts',
+      label: 'Выплаты',
+      content: (
+        <PayoutsTable
+          shift={serializedShift}
+          payouts={serializedPayouts}
+          workers={masters}
+        />
+      )
+    },
+    {
+      id: 'summary',
+      label: 'Итоги',
+      content: (
+        <ShiftSummary
+          shift={serializedShift}
+          totalSales={totals.cashSalesPlusNonCashSales}
+          totalServices={totals.cashServices + totals.noncashServices}
+          totalPayouts={totals.totalPayouts}
+        />
+      )
+    }
+  ]
+
   return (
     <div className="p-6 space-y-8">
       <div className="max-w-7xl mx-auto">
         <ShiftHeader shift={serializedShift} />
-
-        <section className="grid lg:grid-cols-2 gap-8 mb-8">
-          <ServicesTable
-            shift={serializedShift}
-            services={serializedServiceEntries}
-            workers={masters}
-          />
-
-          <SalesTable
-            shift={serializedShift}
-            productSales={serializedProductSales}
-          />
-        </section>
-
-        <section className="grid lg:grid-cols-2 gap-8">
-          <PayoutsTable
-            shift={serializedShift}
-            payouts={serializedPayouts}
-            workers={masters}
-          />
-
-          <ShiftSummary
-            shift={serializedShift}
-            totalSales={totals.cashSalesPlusNonCashSales}
-            totalServices={totals.cashServices + totals.noncashServices}
-            totalPayouts={totals.totalPayouts}
-          />
-        </section>
+        <Tabs tabs={tabs} defaultTab="services" />
       </div>
     </div>
   )

@@ -1,4 +1,7 @@
+'use client'
 import { Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../ui'
+import { Button } from '../ui'
+import { deleteShift } from '@/app/api/shifts'
 
 interface Shift {
   id: number
@@ -41,12 +44,27 @@ export default function ShiftsTable({ shifts }: ShiftsTableProps) {
                 )}
               </TableCell>
               <TableCell>
-                <a 
-                  href={`/shifts/${s.id}`}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
-                >
-                  Открыть
-                </a>
+                <div className="flex gap-2">
+                  <a 
+                    href={`/shifts/${s.id}`}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                  >
+                    Открыть
+                  </a>
+                  <form action={deleteShift}>
+                    <input type="hidden" name="shiftId" value={s.id} />
+                    <Button 
+                      type="submit" 
+                      variant="danger" 
+                      size="sm"
+                      onClick={(e) => {
+                        if (!confirm('Удалить смену?')) e.preventDefault()
+                      }}
+                    >
+                      Удалить
+                    </Button>
+                  </form>
+                </div>
               </TableCell>
             </TableRow>
           ))}
