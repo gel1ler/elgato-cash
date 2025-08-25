@@ -36,6 +36,7 @@ model Shift {
 
 model ServiceEntry {
   id        Int      @id @default(autoincrement())
+  service   String
   amount    Decimal
   method    String   // 'cash' | 'noncash'
   createdAt DateTime @default(now())

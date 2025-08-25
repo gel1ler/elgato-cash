@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Elgato Cash - Система управления кассой
 
-## Getting Started
+Веб-приложение для учета выручки, управления сменами и сотрудниками.
 
-First, run the development server:
+## Структура проекта
 
+### Компоненты (`src/components/`)
+
+Проект разбит на переиспользуемые компоненты:
+
+- **Navigation** - Навигационное меню
+- **CreateShiftForm** - Форма создания смены
+- **ShiftsTable** - Таблица смен
+- **CreateWorkerForm** - Форма создания сотрудника
+- **WorkersTable** - Таблица сотрудников
+- **ReportsFilterForm** - Форма фильтрации отчетов
+- **ReportsStats** - Статистика отчетов
+- **WorkersServicesTable** - Таблица услуг по мастерам для отчетов
+- **ShiftHeader** - Заголовок смены
+- **ServicesTable** - Таблица услуг по мастерам
+- **SalesTable** - Таблица продаж
+- **PayoutsTable** - Таблица выплат
+- **ShiftSummary** - Итоги смены
+
+### API (`src/app/api/`)
+
+Серверные действия вынесены в отдельные файлы:
+
+- **shifts.ts** - API для операций со сменами
+- **workers.ts** - API для операций с сотрудниками
+
+### Утилиты (`src/lib/`)
+
+- **utils.ts** - Функции для вычисления итогов и преобразования данных
+- **prisma.ts** - Конфигурация базы данных
+
+### Страницы (`src/app/`)
+
+- **Главная** (`/`) - Добро пожаловать
+- **Касса** (`/cash`) - Главная страница системы
+- **Смены** (`/shifts`) - Управление сменами
+- **Смена** (`/shifts/[id]`) - Детальный просмотр смены
+- **Сотрудники** (`/workers`) - Управление сотрудниками
+- **Отчеты** (`/reports`) - Аналитика и отчеты
+
+## Технологии
+
+- **Next.js 15** - React фреймворк
+- **TypeScript** - Типизированный JavaScript
+- **Prisma** - ORM для работы с базой данных
+- **Tailwind CSS** - CSS фреймворк
+- **SQLite** - База данных
+
+## Установка и запуск
+
+1. Установите зависимости:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Настройте базу данных:
+```bash
+npx prisma migrate dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Запустите проект:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Функциональность
 
-## Learn More
+### Смены
+- Создание новых смен
+- Добавление услуг по мастерам
+- Учет продаж товаров
+- Регистрация выплат
+- Закрытие смен с подсчетом остатка
 
-To learn more about Next.js, take a look at the following resources:
+### Сотрудники
+- Управление мастерами и администраторами
+- Назначение категорий мастерам
+- Активация/деактивация сотрудников
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Отчеты
+- Фильтрация по периодам
+- Статистика по услугам и продажам
+- Аналитика по мастерам
+- Общие показатели выручки
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Архитектура
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Проект следует принципам:
+- **Разделение ответственности** - компоненты, API и утилиты разделены
+- **Переиспользование** - общие компоненты вынесены в отдельные файлы
+- **Типизация** - полная поддержка TypeScript
+- **Серверные действия** - API функции для работы с данными
+- **Компонентный подход** - модульная структура UI

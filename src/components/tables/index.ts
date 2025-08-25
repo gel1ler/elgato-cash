@@ -1,0 +1,6 @@
+export { default as ShiftsTable } from './ShiftsTable'
+export { default as WorkersTable } from './WorkersTable'
+export { default as SalesTable } from './SalesTable'
+export { default as ServicesTable } from './ServicesTable'
+export { default as PayoutsTable } from './PayoutsTable'
+export { default as WorkersServicesTable } from './WorkersServicesTable'
