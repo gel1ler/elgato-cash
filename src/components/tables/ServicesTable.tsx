@@ -136,27 +136,6 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
 
   const handleCancelAddService = () => setMethodSelect(null)
 
-  const handleAddService = (workerId: number, rowIndex: number) => {
-    const cellKey = `${workerId}-${rowIndex}`
-    const amount = cellValues[cellKey]
-    if (!amount) return
-
-    // Очищаем значение от форматирования
-    const cleanAmount = cleanCurrencyValue(amount)
-    if (!cleanAmount || parseFloat(cleanAmount) <= 0) return
-
-    const formData = new FormData()
-    formData.append('shiftId', shift.id.toString())
-    formData.append('workerId', workerId.toString())
-    formData.append('service', 'Услуга')
-    formData.append('amount', cleanAmount)
-    formData.append('method', 'cash') // По умолчанию наличные
-
-    addService(formData)
-    // Очищаем значение ячейки после добавления
-    setCellValues(prev => ({ ...prev, [cellKey]: '' }))
-  }
-
   // Удаление конкретной услуги
   const handleDeleteService = (serviceId: number) => {
     const formData = new FormData()

@@ -23,11 +23,6 @@ export default async function ShiftView({ params }: { params: Promise<{ id: stri
 
   const totals = computeTotals(shift)
 
-  // Получаем всех мастеров, включая тех, у кого уже есть записи
-  const allWorkers = [...masters]
-  const existingWorkerIds = new Set(shift.serviceEntries.map(e => e.workerId))
-  const workersToShow = allWorkers.filter(w => existingWorkerIds.has(w.id) || w.active)
-
   // Сериализуем данные для передачи в компоненты
   const serializedShift = {
     id: shift.id,
