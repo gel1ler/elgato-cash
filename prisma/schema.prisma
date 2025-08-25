@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Worker {
+  id       Int     @id @default(autoincrement())
+  name     String
+  role     String  // 'master' | 'admin'
+  category String?
+  active   Boolean @default(true)
+
+  // Relations
+  serviceEntries ServiceEntry[]
+  payouts        Payout[]
+  adminForShifts Shift[]       @relation("AdminOfShift")
+}
+
+model Shift {
+  id           Int       @id @default(autoincrement())
+  shiftDate    DateTime
+  openingCash  Decimal    @default(0)
+  closingCash  Decimal?
+  createdAt    DateTime   @default(now())
+  adminId      Int?
+  admin        Worker?    @relation("AdminOfShift", fields: [adminId], references: [id])
+
+  serviceEntries ServiceEntry[]
+  productSales   ProductSale[]
+  payouts        Payout[]
+}
+
+model ServiceEntry {
+  id        Int      @id @default(autoincrement())
+  amount    Decimal
+  method    String   // 'cash' | 'noncash'
+  createdAt DateTime @default(now())
+
+  shiftId   Int
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  workerId  Int
+  worker    Worker   @relation(fields: [workerId], references: [id])
+}
+
+model ProductSale {
+  id        Int      @id @default(autoincrement())
+  product   String
+  amount    Decimal
+  method    String
+  createdAt DateTime @default(now())
+
+  shiftId   Int
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+}
+
+model Payout {
+  id        Int      @id @default(autoincrement())
+  amount    Decimal
+  note      String?
+  createdAt DateTime @default(now())
+
+  shiftId   Int
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  workerId  Int?
+  worker    Worker?  @relation(fields: [workerId], references: [id])
+}
