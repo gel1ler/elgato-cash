@@ -36,6 +36,7 @@ export async function removeWorkerFromTable(formData: FormData) {
   const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
   if (!shift || shift.closingCash !== null) return
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await prisma.$transaction(async (tx) => {
     // Удаляем все услуги этого работника в данной смене
     await tx.serviceEntry.deleteMany({ where: { shiftId, workerId } })
