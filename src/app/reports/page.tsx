@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import type { Worker } from '@prisma/client'
 import { ReportsFilterForm, ReportsStats, WorkersServicesTable } from '@/components'
 
 function firstDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1) }
@@ -13,10 +14,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     where: { shift: { shiftDate: { gte: start, lte: end } } },
     _sum: { amount: true }
   })
-  const workers = await prisma.worker.findMany({ where: { id: { in: [...new Set(svc.map((s: { workerId: number }) => s.workerId))] } } })
+  const workers: Worker[] = await prisma.worker.findMany({ where: { id: { in: [...new Set(svc.map((s: { workerId: number }) => s.workerId))] } } })
   const byWorker = new Map<number, { name: string, cash: number, noncash: number }>()
   for (const row of svc) {
-    const w = workers.find(w => w.id === row.workerId)
+    const w = workers.find((w: Worker) => w.id === row.workerId)
     if (!byWorker.has(row.workerId)) byWorker.set(row.workerId, { name: w?.name ?? '', cash: 0, noncash: 0 })
     const rec = byWorker.get(row.workerId)!
     if (row.method === 'cash') rec.cash = Number(row._sum.amount ?? 0)
@@ -43,18 +44,18 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
-        <ReportsFilterForm 
-          start={start.toISOString().slice(0, 10)} 
-          end={end.toISOString().slice(0, 10)} 
+        <ReportsFilterForm
+          start={start.toISOString().slice(0, 10)}
+          end={end.toISOString().slice(0, 10)}
         />
-        
-        <ReportsStats 
+
+        <ReportsStats
           totalServices={totalServices}
           totalSales={totalSales}
           totalPayouts={totalPayouts}
         />
 
-        <WorkersServicesTable 
+        <WorkersServicesTable
           workersServices={byWorker}
         />
       </div>
