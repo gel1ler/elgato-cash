@@ -13,7 +13,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     where: { shift: { shiftDate: { gte: start, lte: end } } },
     _sum: { amount: true }
   })
-  const workers = await prisma.worker.findMany({ where: { id: { in: [...new Set(svc.map(s => s.workerId))] } } })
+  const workers = await prisma.worker.findMany({ where: { id: { in: [...new Set(svc.map((s: { workerId: number }) => s.workerId))] } } })
   const byWorker = new Map<number, { name: string, cash: number, noncash: number }>()
   for (const row of svc) {
     const w = workers.find(w => w.id === row.workerId)
