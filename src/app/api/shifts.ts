@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { toNumber } from '@/lib/utils'
+import type { Prisma } from '@prisma/client'
 
 export async function createShift(formData: FormData) {
   const shiftDate = new Date(String(formData.get('shiftDate')))
@@ -36,8 +37,7 @@ export async function removeWorkerFromTable(formData: FormData) {
   const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
   if (!shift || shift.closingCash !== null) return
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Удаляем все услуги этого работника в данной смене
     await tx.serviceEntry.deleteMany({ where: { shiftId, workerId } })
 
