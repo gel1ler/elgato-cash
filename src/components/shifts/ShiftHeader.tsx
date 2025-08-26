@@ -1,4 +1,4 @@
-import { Card } from '../ui'
+import { Card, Button } from '../ui'
 
 interface ShiftHeaderProps {
   shift: {
@@ -25,7 +25,7 @@ export default function ShiftHeader({ shift }: ShiftHeaderProps) {
             Начальная сумма: {shift.openingCash.toFixed(2)} ₽
           </p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex items-center gap-3">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
             isShiftClosed 
               ? 'bg-green-100 text-green-800' 
@@ -33,6 +33,18 @@ export default function ShiftHeader({ shift }: ShiftHeaderProps) {
           }`}>
             {isShiftClosed ? 'Закрыта' : 'Открыта'}
           </span>
+          {!isShiftClosed && (
+            <form action={async (formData) => {
+              const { closeShift } = await import('@/app/api/shifts')
+              const fd = new FormData()
+              fd.set('shiftId', String(shift.id))
+              await closeShift(fd)
+            }}>
+              <Button type="submit" variant="success">
+                Закрыть смену
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </Card>
