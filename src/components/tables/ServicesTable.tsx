@@ -3,6 +3,7 @@
 import { addService, deleteService, removeWorkerFromTable, updateService } from '@/app/api/shifts'
 import { Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../ui'
 import { Button, Input, Select } from '../ui'
+import { useLoading } from '../ui/LoadingProvider'
 import { useState, useEffect, useRef } from 'react'
 
 interface Service {
@@ -24,6 +25,7 @@ interface ServicesTableProps {
 
 export default function ServicesTable({ shift, services, workers }: ServicesTableProps) {
   const isShiftClosed = shift.closingCash !== null
+  const { start, stop } = useLoading()
 
   // Состояние для каждой ячейки отдельно (workerId + rowIndex)
   const [cellValues, setCellValues] = useState<Record<string, string>>({})
@@ -113,7 +115,7 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     serviceId?: number // Добавляем serviceId для обновления существующей услуги
   } | null>(null)
 
-  const handleConfirmAddService = (method: 'cash' | 'noncash' | 'transfer' | 'sbp') => {
+  const handleConfirmAddService = async (method: 'cash' | 'noncash' | 'transfer' | 'sbp') => {
     if (!methodSelect) return
     const { workerId, rowIndex, amount, serviceId } = methodSelect
     const cellKey = `${workerId}-${rowIndex}`
@@ -124,11 +126,16 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     formData.append('service', 'Услуга')
     formData.append('amount', cleanAmount)
     formData.append('method', method)
-    if (serviceId) {
-      formData.append('id', String(serviceId))
-      updateService(formData)
-    } else {
-      addService(formData)
+    start()
+    try {
+      if (serviceId) {
+        formData.append('id', String(serviceId))
+        await updateService(formData)
+      } else {
+        await addService(formData)
+      }
+    } finally {
+      stop()
     }
     setMethodSelect(null)
     setCellValues(prev => ({ ...prev, [cellKey]: '' }))
@@ -137,11 +144,16 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
   const handleCancelAddService = () => setMethodSelect(null)
 
   // Удаление конкретной услуги
-  const handleDeleteService = (serviceId: number) => {
+  const handleDeleteService = async (serviceId: number) => {
     const formData = new FormData()
     formData.append('id', String(serviceId))
     formData.append('shiftId', String(shift.id))
-    deleteService(formData)
+    start()
+    try {
+      await deleteService(formData)
+    } finally {
+      stop()
+    }
   }
 
   const handleWorkerSelect = (workerId: string) => {
@@ -153,11 +165,16 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     }
   }
 
-  const handleRemoveWorker = (workerId: number) => {
+  const handleRemoveWorker = async (workerId: number) => {
     const formData = new FormData()
     formData.append('shiftId', String(shift.id))
     formData.append('workerId', String(workerId))
-    removeWorkerFromTable(formData)
+    start()
+    try {
+      await removeWorkerFromTable(formData)
+    } finally {
+      stop()
+    }
     setSelectedWorkers(prev => prev.filter(w => w.id !== workerId))
   }
 
@@ -167,7 +184,7 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
   }
 
   // Функция для обновления существующей услуги
-  const handleUpdateService = (serviceId: number, newAmount: string) => {
+  const handleUpdateService = async (serviceId: number, newAmount: string) => {
     const cleanAmount = cleanCurrencyValue(newAmount)
     const numericAmount = cleanAmount === '' ? NaN : Number(cleanAmount)
     if (cleanAmount === '' || Number.isNaN(numericAmount) || numericAmount < 0) return
@@ -176,7 +193,12 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     formData.append('id', String(serviceId))
     formData.append('shiftId', String(shift.id))
     formData.append('amount', cleanAmount)
-    updateService(formData)
+    start()
+    try {
+      await updateService(formData)
+    } finally {
+      stop()
+    }
   }
 
   // Функции для обработки фокуса ячеек
@@ -226,7 +248,12 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
         const formData = new FormData()
         formData.append('id', String(currentService.id))
         formData.append('shiftId', String(shift.id))
-        deleteService(formData)
+        start()
+        try {
+          await deleteService(formData)
+        } finally {
+          stop()
+        }
         // Очищаем локальное значение ячейки
         setCellValues(prev => ({ ...prev, [cellKey]: '' }))
         return
@@ -285,106 +312,114 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
           </TableRow>
         </TableHead>
         <TableBody>
-          {Array.from({ length: maxRows }, (_, rowIndex) => (
-            <TableRow key={rowIndex}>
-              {selectedWorkers.map(worker => {
-                const workerServices = servicesByWorker[worker.id] || []
-                const service = workerServices[rowIndex]
-                const cellKey = `${worker.id}-${rowIndex}`
-
-                return (
-                  <TableCell
-                    key={worker.id}
-                    className={`p-0 transition-all relative duration-200 min-w-[120px] whitespace-nowrap ${activeCell === `${worker.id}-${rowIndex}`
-                      ? 'ring-2 ring-blue-500 border-blue-500'
-                      : ''
-                      }`}
-                  >
-                    {service ? (
-                      <div className="group">
-                        <Input
-                          ref={(el) => {
-                            inputRefs.current[`${worker.id}-${rowIndex}`] = el
-                          }}
-                          type="text"
-                          noBorder
-                          value={cellValues[`${worker.id}-${rowIndex}`] || formatCurrency(service.amount)}
-                          onChange={(e) => {
-                            if (!isShiftClosed) {
-                              const cellKey = `${worker.id}-${rowIndex}`
-                              setCellValues(prev => ({ ...prev, [cellKey]: e.target.value }))
-                            }
-                          }}
-                          onMouseDown={(e) => handleCellMouseDown(worker.id, rowIndex, e)}
-                          onFocus={() => handleCellFocus(worker.id, rowIndex)}
-                          onMouseUp={() => moveCaretToNumberEnd(`${worker.id}-${rowIndex}`)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                                ; (e.currentTarget as HTMLInputElement).blur()
-                            }
-                          }}
-                          onBlur={() => handleExistingServiceBlur(worker.id, rowIndex)}
-                          className="w-full h-full border-0 focus:ring-0 focus:border-0 text-center outline-none"
-                          disabled={isShiftClosed}
-                        />
-                        <span
-                          className="hidden group-hover:block absolute right-1 top-0 text-lg p-1 text-gray-400 hover:text-red-500 cursor-pointer select-none"
-                          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteService(service.id) }}
-                          title="Удалить запись"
-                        >
-                          ×
-                        </span>
-                        <span
-                          className={`absolute left-2 top-2 text-[10px] p-1 rounded cursor-pointer ${service.method === 'cash' ? 'bg-green-100 text-green-700' :
-                            service.method === 'noncash' ? 'bg-blue-100 text-blue-700' :
-                              service.method === 'transfer' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-purple-100 text-purple-700'
-                            }`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setMethodSelect({ workerId: worker.id, rowIndex, amount: String(service.amount), serviceId: service.id })
-                          }}
-                          title="Изменить способ оплаты"
-                          role="button"
-                          tabIndex={0}
-                        >
-                          {service.method === 'cash' ? 'Нал' :
-                            service.method === 'noncash' ? 'Б/н' :
-                              service.method === 'transfer' ? 'Перевод' : 'СБП'}
-                        </span>
-                      </div>
-                    ) : (
-                      !isShiftClosed && (
-                        <Input
-                          ref={(el) => {
-                            inputRefs.current[`${worker.id}-${rowIndex}`] = el
-                          }}
-                          type="text"
-                          placeholder="0 ₽"
-                          noBorder
-                          value={cellValues[cellKey] || ''}
-                          onChange={(e) => handleCellChange(worker.id, rowIndex, e.target.value)}
-                          onMouseDown={(e) => handleCellMouseDown(worker.id, rowIndex, e)}
-                          onFocus={() => handleCellFocus(worker.id, rowIndex)}
-                          onMouseUp={() => moveCaretToNumberEnd(`${worker.id}-${rowIndex}`)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                                ; (e.currentTarget as HTMLInputElement).blur()
-                            }
-                          }}
-                          onBlur={() => handleCellBlur(worker.id, rowIndex)}
-                          className="w-full h-full border-0 focus:ring-0 focus:border-0 text-center outline-none"
-                        />
-                      )
-                    )}
-                  </TableCell>
-                )
-              })}
+          {selectedWorkers.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={1} className="text-center text-gray-500 py-8">
+                Здесь пока нет мастеров
+              </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            Array.from({ length: maxRows }, (_, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {selectedWorkers.map(worker => {
+                  const workerServices = servicesByWorker[worker.id] || []
+                  const service = workerServices[rowIndex]
+                  const cellKey = `${worker.id}-${rowIndex}`
+
+                  return (
+                    <TableCell
+                      key={worker.id}
+                      className={`p-0 transition-all relative duration-200 min-w-[120px] whitespace-nowrap ${activeCell === `${worker.id}-${rowIndex}`
+                        ? 'ring-2 ring-blue-500 border-blue-500'
+                        : ''
+                        }`}
+                    >
+                      {service ? (
+                        <div className="group">
+                          <Input
+                            ref={(el) => {
+                              inputRefs.current[`${worker.id}-${rowIndex}`] = el
+                            }}
+                            type="text"
+                            noBorder
+                            value={cellValues[`${worker.id}-${rowIndex}`] || formatCurrency(service.amount)}
+                            onChange={(e) => {
+                              if (!isShiftClosed) {
+                                const cellKey = `${worker.id}-${rowIndex}`
+                                setCellValues(prev => ({ ...prev, [cellKey]: e.target.value }))
+                              }
+                            }}
+                            onMouseDown={(e) => handleCellMouseDown(worker.id, rowIndex, e)}
+                            onFocus={() => handleCellFocus(worker.id, rowIndex)}
+                            onMouseUp={() => moveCaretToNumberEnd(`${worker.id}-${rowIndex}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                  ; (e.currentTarget as HTMLInputElement).blur()
+                              }
+                            }}
+                            onBlur={() => handleExistingServiceBlur(worker.id, rowIndex)}
+                            className="w-full h-full border-0 focus:ring-0 focus:border-0 text-center outline-none"
+                            disabled={isShiftClosed}
+                          />
+                          <span
+                            className="hidden group-hover:block absolute right-1 top-0 text-lg p-1 text-gray-400 hover:text-red-500 cursor-pointer select-none"
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteService(service.id) }}
+                            title="Удалить запись"
+                          >
+                            ×
+                          </span>
+                          <span
+                            className={`absolute left-2 top-2 text-[10px] p-1 rounded cursor-pointer ${service.method === 'cash' ? 'bg-green-100 text-green-700' :
+                              service.method === 'noncash' ? 'bg-blue-100 text-blue-700' :
+                                service.method === 'transfer' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-purple-100 text-purple-700'
+                              }`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMethodSelect({ workerId: worker.id, rowIndex, amount: String(service.amount), serviceId: service.id })
+                            }}
+                            title="Изменить способ оплаты"
+                            role="button"
+                            tabIndex={0}
+                          >
+                            {service.method === 'cash' ? 'Нал' :
+                              service.method === 'noncash' ? 'Б/н' :
+                                service.method === 'transfer' ? 'Перевод' : 'СБП'}
+                          </span>
+                        </div>
+                      ) : (
+                        !isShiftClosed && (
+                          <Input
+                            ref={(el) => {
+                              inputRefs.current[`${worker.id}-${rowIndex}`] = el
+                            }}
+                            type="text"
+                            placeholder="0 ₽"
+                            noBorder
+                            value={cellValues[cellKey] || ''}
+                            onChange={(e) => handleCellChange(worker.id, rowIndex, e.target.value)}
+                            onMouseDown={(e) => handleCellMouseDown(worker.id, rowIndex, e)}
+                            onFocus={() => handleCellFocus(worker.id, rowIndex)}
+                            onMouseUp={() => moveCaretToNumberEnd(`${worker.id}-${rowIndex}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                  ; (e.currentTarget as HTMLInputElement).blur()
+                              }
+                            }}
+                            onBlur={() => handleCellBlur(worker.id, rowIndex)}
+                            className="w-full h-full border-0 focus:ring-0 focus:border-0 text-center outline-none"
+                          />
+                        )
+                      )}
+                    </TableCell>
+                  )
+                })}
+              </TableRow>
+            ))
+          )}
         </TableBody>
         <tfoot>
           <tr className="bg-gray-50">

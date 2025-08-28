@@ -19,19 +19,27 @@ export default function WorkersServicesTable({ workersServices }: WorkersService
           </TableRow>
         </TableHead>
         <TableBody>
-          {Array.from(workersServices.entries()).map(([workerId, data]) => (
-            <TableRow key={workerId}>
-              <TableCell className="font-medium">{data.name}</TableCell>
-              <TableCell>
-                <Badge variant="primary">Мастер</Badge>
-              </TableCell>
-              <TableCell className="font-mono text-green-600">{(data.cash + data.noncash).toFixed(2)} ₽</TableCell>
-              <TableCell className="font-mono text-red-600">0.00 ₽</TableCell>
-              <TableCell className="font-mono font-semibold text-green-600">
-                {(data.cash + data.noncash).toFixed(2)} ₽
+          {workersServices.size === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                Здесь пока нет данных об услугах
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            Array.from(workersServices.entries()).map(([workerId, data]) => (
+              <TableRow key={workerId}>
+                <TableCell className="font-medium">{data.name}</TableCell>
+                <TableCell>
+                  <Badge variant="primary">Мастер</Badge>
+                </TableCell>
+                <TableCell className="font-mono text-green-600">{(data.cash + data.noncash).toFixed(2)} ₽</TableCell>
+                <TableCell className="font-mono text-red-600">0.00 ₽</TableCell>
+                <TableCell className="font-mono font-semibold text-green-600">
+                  {(data.cash + data.noncash).toFixed(2)} ₽
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
         <tfoot>
           <tr className="bg-gray-50">

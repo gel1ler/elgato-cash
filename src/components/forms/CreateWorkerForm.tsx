@@ -1,7 +1,7 @@
 'use client'
 
 import { createWorker } from '@/app/api/workers'
-import { Card, FormField, Input, Select, Button } from '../ui'
+import { Card, FormField, Input, Select, SubmitButton } from '../ui'
 
 export default function CreateWorkerForm() {
   return (
@@ -30,9 +30,9 @@ export default function CreateWorkerForm() {
         </FormField>
         
         <div className="flex items-end">
-          <Button type="submit" className="w-full">
+          <SubmitButton className="w-full">
             Добавить
-          </Button>
+          </SubmitButton>
         </div>
       </form>
     </Card>

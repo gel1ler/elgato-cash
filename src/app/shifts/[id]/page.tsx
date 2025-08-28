@@ -99,9 +99,10 @@ export default async function ShiftView({ params }: { params: Promise<{ id: stri
       content: (
         <ShiftSummary
           shift={serializedShift}
-          totalSales={totals.cashSalesPlusNonCashSales}
-          totalServices={totals.cashServices + totals.noncashServices}
+          totalSales={totals.overallSales}
+          totalServices={totals.overallServices}
           totalPayouts={totals.totalPayouts}
+          paymentMethods={totals.paymentMethods}
         />
       )
     }

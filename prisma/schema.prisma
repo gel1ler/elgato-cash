@@ -38,7 +38,7 @@ model ServiceEntry {
   id        Int      @id @default(autoincrement())
   service   String
   amount    Decimal
-  method    String   // 'cash' | 'noncash'
+  method    String   // 'cash' | 'noncash' | 'transfer' | 'sbp'
   createdAt DateTime @default(now())
 
   shiftId   Int
@@ -51,7 +51,7 @@ model ProductSale {
   id        Int      @id @default(autoincrement())
   product   String
   amount    Decimal
-  method    String
+  method    String   // 'cash' | 'noncash' | 'transfer' | 'sbp'
   createdAt DateTime @default(now())
 
   shiftId   Int

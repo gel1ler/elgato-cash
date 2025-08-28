@@ -1,7 +1,7 @@
 'use client'
 
 import { createShift } from '@/app/api/shifts'
-import { Card, FormField, Input, Select, Button } from '../ui'
+import { Card, FormField, Input, Select, SubmitButton } from '../ui'
 
 interface CreateShiftFormProps {
   admins: Array<{ id: number; name: string }>
@@ -41,9 +41,9 @@ export default function CreateShiftForm({ admins, today }: CreateShiftFormProps)
         </FormField>
         
         <div className="flex items-end">
-          <Button type="submit" className="w-full">
+          <SubmitButton className="w-full">
             Создать смену
-          </Button>
+          </SubmitButton>
         </div>
       </form>
     </Card>

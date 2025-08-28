@@ -2,7 +2,7 @@
 
 import { addPayout, deletePayout } from '@/app/api/shifts'
 import { Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../ui'
-import { Button, Input, Select } from '../ui'
+import { Button, Input, Select, SubmitButton } from '../ui'
 
 interface Payout {
   id: number
@@ -33,29 +33,27 @@ export default function PayoutsTable({ shift, payouts, workers }: PayoutsTablePr
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
           </Select>
-          <Input 
-            name="amount" 
-            type="number" 
-            step="0.01" 
-            min="0.01" 
-            required 
-            placeholder="Сумма" 
-            className="w-32" 
+          <Input
+            name="amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            required
+            placeholder="Сумма"
+            className="w-32"
           />
-          <Input 
-            name="reason" 
-            required 
-            placeholder="Причина" 
+          <Input
+            name="reason"
+            required
+            placeholder="Причина"
           />
           <div>
             <input type="hidden" name="shiftId" value={shift.id} />
-            <Button type="submit" variant="success">
-              Добавить
-            </Button>
+            <SubmitButton variant="success">Добавить</SubmitButton>
           </div>
         </form>
       )}
-      
+
       <Table>
         <TableHead>
           <TableRow>
@@ -66,30 +64,30 @@ export default function PayoutsTable({ shift, payouts, workers }: PayoutsTablePr
           </TableRow>
         </TableHead>
         <TableBody>
-          {payouts.map(p => (
-            <TableRow key={p.id}>
-              <TableCell className="font-medium">{p.worker?.name ?? 'Неизвестно'}</TableCell>
-              <TableCell className="font-mono text-red-600">{p.amount.toFixed(2)}</TableCell>
-              <TableCell>{p.reason}</TableCell>
-              {!isShiftClosed && (
-                <TableCell>
-                  <form className="inline" action={deletePayout}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <input type="hidden" name="shiftId" value={shift.id} />
-                    <Button
-                      type="submit"
-                      variant="danger"
-                      size="sm"
-                      className="text-xs px-2 py-1"
-                      title="Удалить выплату"
-                    >
-                      ×
-                    </Button>
-                  </form>
-                </TableCell>
-              )}
+          {payouts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={!isShiftClosed ? 4 : 3} className="text-center text-gray-500 py-8">
+                Здесь пока нет выплат
+              </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            payouts.map(p => (
+              <TableRow key={p.id}>
+                <TableCell className="font-medium">{p.worker?.name ?? 'Неизвестно'}</TableCell>
+                <TableCell className="font-mono text-red-600">{p.amount.toFixed(2)}</TableCell>
+                <TableCell>{p.reason}</TableCell>
+                {!isShiftClosed && (
+                  <TableCell>
+                    <form className="inline" action={deletePayout}>
+                      <input type="hidden" name="id" value={p.id} />
+                      <input type="hidden" name="shiftId" value={shift.id} />
+                      <SubmitButton variant="danger" size="sm" className="text-xs px-2 py-1" title="Удалить выплату">×</SubmitButton>
+                    </form>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))
+          )}
         </TableBody>
         <tfoot>
           <tr className="bg-red-50">
