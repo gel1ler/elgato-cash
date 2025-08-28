@@ -13,6 +13,7 @@ model Worker {
   role     String  // 'master' | 'admin'
   category String?
   active   Boolean @default(true)
+  salaryRate Decimal @default(0.5)
 
   // Relations
   serviceEntries ServiceEntry[]

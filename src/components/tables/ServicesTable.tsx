@@ -230,7 +230,7 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     }
   }
 
-  const handleExistingServiceBlur = (workerId: number, rowIndex: number) => {
+  const handleExistingServiceBlur = async (workerId: number, rowIndex: number) => {
     const cellKey = `${workerId}-${rowIndex}`
     setActiveCell(null)
 
