@@ -40,6 +40,7 @@ function StatCard({ title, value, color, subtitle }: {
 function PaymentMethodsSummary({ paymentMethods }: { paymentMethods: ShiftSummaryProps['paymentMethods'] }) {
   const totalCash = paymentMethods.cash
   const totalNonCash = paymentMethods.noncash + paymentMethods.transfer + paymentMethods.sbp
+  const denom = totalCash + totalNonCash
 
   return (
     <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -50,28 +51,28 @@ function PaymentMethodsSummary({ paymentMethods }: { paymentMethods: ShiftSummar
           title="Наличные"
           value={`${totalCash.toFixed(2)} ₽`}
           color="text-green-600"
-          subtitle={`${((totalCash / (totalCash + totalNonCash)) * 100).toFixed(1)}%`}
+          subtitle={`${denom > 0 ? ((totalCash / denom) * 100).toFixed(1) : '0.0'}%`}
         />
 
         <StatCard
           title="Безналичные"
           value={`${paymentMethods.noncash.toFixed(2)} ₽`}
           color="text-blue-600"
-          subtitle={`${((paymentMethods.noncash / (totalCash + totalNonCash)) * 100).toFixed(1)}%`}
+          subtitle={`${denom > 0 ? ((paymentMethods.noncash / denom) * 100).toFixed(1) : '0.0'}%`}
         />
 
         <StatCard
           title="Переводы"
           value={`${paymentMethods.transfer.toFixed(2)} ₽`}
           color="text-yellow-600"
-          subtitle={`${((paymentMethods.transfer / (totalCash + totalNonCash)) * 100).toFixed(1)}%`}
+          subtitle={`${denom > 0 ? ((paymentMethods.transfer / denom) * 100).toFixed(1) : '0.0'}%`}
         />
 
         <StatCard
           title="СБП"
           value={`${paymentMethods.sbp.toFixed(2)} ₽`}
           color="text-purple-600"
-          subtitle={`${((paymentMethods.sbp / (totalCash + totalNonCash)) * 100).toFixed(1)}%`}
+          subtitle={`${denom > 0 ? ((paymentMethods.sbp / denom) * 100).toFixed(1) : '0.0'}%`}
         />
       </div>
     </div>
@@ -81,8 +82,8 @@ function PaymentMethodsSummary({ paymentMethods }: { paymentMethods: ShiftSummar
 export default function ShiftSummary({ shift, totalSales, totalServices, totalPayouts, paymentMethods }: ShiftSummaryProps) {
   const isShiftClosed = shift.closingCash !== null
   const totalIncome = totalSales + totalServices
-  const netProfit = totalIncome - totalPayouts
-  const expectedCash = shift.openingCash + netProfit
+  // Ожидаемая касса учитывает только наличные поступления
+  const expectedCash = shift.openingCash + paymentMethods.cash - totalPayouts
 
   return (
     <Card title="Итоги смены" className="mb-6">

@@ -20,8 +20,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     const w = workers.find((w: { id: number }) => w.id === row.workerId)
     if (!byWorker.has(row.workerId)) byWorker.set(row.workerId, { name: w?.name ?? '', cash: 0, noncash: 0 })
     const rec = byWorker.get(row.workerId)!
-    if (row.method === 'cash') rec.cash = Number(row._sum.amount ?? 0)
-    else rec.noncash = Number(row._sum.amount ?? 0)
+    const amount = Number((row as any)._sum?.amount ?? 0)
+    if (row.method === 'cash') rec.cash += amount
+    else rec.noncash += amount
   }
 
   const sales = await prisma.productSale.groupBy({
@@ -83,7 +84,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     totalSales={totalSales}
                     totalPayouts={totalPayouts}
                   />
-                  <WorkersServicesTable workersServices={byWorker} />
+                  <WorkersServicesTable workersServices={byWorker} payoutsByWorker={payoutsMap} />
                 </>
               )
             },

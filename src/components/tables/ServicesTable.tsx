@@ -62,18 +62,28 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
 
   // Функция для форматирования суммы в денежный формат рублей
   const formatCurrency = (value: string | number): string => {
-    const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value
+    const numValue = typeof value === 'string' ? (value === '' ? 0 : Number(value.replace(/,/g, '.'))) || 0 : value
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(numValue)
   }
 
   // Функция для очистки введенного значения от форматирования
   const cleanCurrencyValue = (value: string): string => {
-    return value.replace(/[^\d]/g, '')
+    // Сохраняем десятичную точку/запятую, убираем прочие символы
+    const cleaned = value
+      .replace(/\s/g, '')
+      .replace(/(\.|,)(?=.*(\.|,))/g, '') // оставить только первый разделитель
+      .replace(',', '.')
+      .replace(/[^0-9.]/g, '')
+    // Ограничим до двух знаков после точки
+    const match = cleaned.match(/^(\d+)(?:\.(\d{0,2}))?$/)
+    if (!match) return cleaned
+    const [, intPart, fracPart = ''] = match
+    return fracPart === '' ? intPart : `${intPart}.${fracPart}`
   }
 
   // Состояние для выбранных мастеров в смене
@@ -215,7 +225,7 @@ export default function ServicesTable({ shift, services, workers }: ServicesTabl
     const value = cellValues[cellKey]
     if (value) {
       const cleanValue = cleanCurrencyValue(value)
-      const numeric = parseFloat(cleanValue)
+      const numeric = Number(cleanValue)
 
       if (cleanValue && numeric > 0) {
         // Показываем выбор метода оплаты
