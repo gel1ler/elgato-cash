@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
-import { ReportsFilterForm, ReportsStats, WorkersServicesTable } from '@/components'
+import { ReportsFilterForm, ReportsStats, WorkersServicesTable, PayrollTable } from '@/components'
+import { Tabs } from '@/components/ui'
 
 function firstDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1) }
 
@@ -38,7 +39,28 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const totalSales = sales.reduce((sum, s) => sum + Number(s._sum.amount ?? 0), 0)
   const totalPayouts = Number(payouts._sum.amount ?? 0)
 
-
+  // Payroll data
+  const workersAll = await prisma.worker.findMany({ where: { active: true }, orderBy: [{ role: 'asc' }, { name: 'asc' }] })
+  const servicesByWorker = await prisma.serviceEntry.groupBy({
+    by: ['workerId'],
+    where: { shift: { shiftDate: { gte: start, lte: end } } },
+    _sum: { amount: true }
+  })
+  const payoutsByWorker = await prisma.payout.groupBy({
+    by: ['workerId'],
+    where: { shift: { shiftDate: { gte: start, lte: end } }, workerId: { not: null } },
+    _sum: { amount: true }
+  })
+  const servicesMap = new Map<number, number>(servicesByWorker.map(r => [r.workerId, Number(r._sum.amount ?? 0)]))
+  const payoutsMap = new Map<number, number>(payoutsByWorker.map(r => [r.workerId!, Number(r._sum.amount ?? 0)]))
+  const payrollRows = workersAll.map(w => ({
+    workerId: w.id,
+    name: w.name,
+    role: w.role,
+    salaryRate: Number((w as any).salaryRate ?? 0.5),
+    servicesTotal: servicesMap.get(w.id) ?? 0,
+    payoutsTotal: payoutsMap.get(w.id) ?? 0,
+  }))
 
   return (
     <div className="p-6">
@@ -47,15 +69,32 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           start={start.toISOString().slice(0, 10)} 
           end={end.toISOString().slice(0, 10)} 
         />
-        
-        <ReportsStats 
-          totalServices={totalServices}
-          totalSales={totalSales}
-          totalPayouts={totalPayouts}
-        />
 
-        <WorkersServicesTable 
-          workersServices={byWorker}
+        <Tabs
+          defaultTab="overview"
+          tabs={[
+            {
+              id: 'overview',
+              label: 'Обзор',
+              content: (
+                <>
+                  <ReportsStats 
+                    totalServices={totalServices}
+                    totalSales={totalSales}
+                    totalPayouts={totalPayouts}
+                  />
+                  <WorkersServicesTable workersServices={byWorker} />
+                </>
+              )
+            },
+            {
+              id: 'payroll',
+              label: 'Зарплаты',
+              content: (
+                <PayrollTable rows={payrollRows} />
+              )
+            }
+          ]}
         />
       </div>
     </div>

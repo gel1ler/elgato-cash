@@ -6,7 +6,7 @@ import { Card, FormField, Input, Select, SubmitButton } from '../ui'
 export default function CreateWorkerForm() {
   return (
     <Card title="Сотрудники" className="mb-6">
-      <form className="grid sm:grid-cols-4 gap-4" action={createWorker}>
+      <form className="grid sm:grid-cols-5 gap-4" action={createWorker}>
         <FormField label="Имя" required>
           <Input 
             name="name" 
@@ -29,6 +29,17 @@ export default function CreateWorkerForm() {
           />
         </FormField>
         
+        <FormField label="Коэффициент ЗП">
+          <Input 
+            name="salaryRate" 
+            type="number"
+            step="0.01"
+            min="0"
+            max="1"
+            placeholder="0.50"
+          />
+        </FormField>
+
         <div className="flex items-end">
           <SubmitButton className="w-full">
             Добавить
