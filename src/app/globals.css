@@ -10,7 +10,9 @@ body {
 }
 
 /* Улучшенные стили для форм */
-input, select, textarea {
+input,
+select,
+textarea {
   font-family: inherit;
 }
 
@@ -24,6 +26,11 @@ table {
 button {
   font-family: inherit;
   transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 button:focus {

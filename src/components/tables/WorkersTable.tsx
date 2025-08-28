@@ -1,6 +1,6 @@
 'use client'
 
-import { toggleWorker, deleteWorker } from '@/app/api/workers'
+import { toggleWorker, deleteWorker, updateWorkerSalaryRate } from '@/app/api/workers'
 import { Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../ui'
 import { Button, Badge } from '../ui'
 
@@ -10,6 +10,7 @@ interface Worker {
   role: string
   category?: string | null
   active: boolean
+  salaryRate?: number
 }
 
 interface WorkersTableProps {
@@ -26,6 +27,7 @@ export default function WorkersTable({ workers }: WorkersTableProps) {
             <TableHeader>Роль</TableHeader>
             <TableHeader>Категория</TableHeader>
             <TableHeader>Статус</TableHeader>
+            <TableHeader>Коэфф. ЗП</TableHeader>
             <TableHeader>Действия</TableHeader>
           </TableRow>
         </TableHead>
@@ -50,6 +52,22 @@ export default function WorkersTable({ workers }: WorkersTableProps) {
                   <Badge variant={w.active ? 'success' : 'secondary'}>
                     {w.active ? 'Активен' : 'Скрыт'}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <form className="inline-flex items-center space-x-2" action={updateWorkerSalaryRate}>
+                    <input type="hidden" name="id" value={w.id} />
+                    <input
+                      name="salaryRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      defaultValue={w.salaryRate ?? 0.5}
+                      className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
+                      aria-label="Коэффициент ЗП"
+                    />
+                    <Button type="submit" size="sm" variant="secondary">Сохранить</Button>
+                  </form>
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">

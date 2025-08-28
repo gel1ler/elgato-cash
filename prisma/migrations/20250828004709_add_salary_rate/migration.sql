@@ -5,6 +5,7 @@ CREATE TABLE "Worker" (
     "role" TEXT NOT NULL,
     "category" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
+    "salaryRate" DECIMAL(65,30) NOT NULL DEFAULT 0.5,
 
     CONSTRAINT "Worker_pkey" PRIMARY KEY ("id")
 );
