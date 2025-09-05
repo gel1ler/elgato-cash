@@ -3,6 +3,7 @@
 import { addSale, deleteSale } from '@/app/api/shifts'
 import { Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../ui'
 import { Button, Badge, Input, Select, SubmitButton } from '../ui'
+import { PAYMENT_METHODS, getMethodLabel, getMethodBadgeVariant } from '@/lib/paymentMethods'
 
 interface ProductSale {
   id: number
@@ -33,10 +34,9 @@ export default function SalesTable({ shift, productSales }: SalesTableProps) {
           />
           <Select name="method" required>
             <option value="">Метод</option>
-            <option value="cash">Нал</option>
-            <option value="noncash">Б/Н</option>
-            <option value="transfer">Перевод</option>
-            <option value="sbp">СБП</option>
+            {PAYMENT_METHODS.filter(m => m !== 'certificate').map(method => (
+              <option key={method} value={method}>{getMethodLabel(method)}</option>
+            ))}
           </Select>
           <Input
             name="amount"
@@ -75,24 +75,8 @@ export default function SalesTable({ shift, productSales }: SalesTableProps) {
               <TableRow key={s.id}>
                 <TableCell>{s.product}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      s.method === 'cash'
-                        ? 'success'
-                        : s.method === 'noncash'
-                          ? 'info'
-                          : s.method === 'transfer'
-                            ? 'warning'
-                            : 'primary'
-                    }
-                  >
-                    {s.method === 'cash'
-                      ? 'Нал'
-                      : s.method === 'noncash'
-                        ? 'Б/Н'
-                        : s.method === 'transfer'
-                          ? 'Перевод'
-                          : 'СБП'}
+                  <Badge variant={getMethodBadgeVariant(s.method as any)}>
+                    {getMethodLabel(s.method as any)}
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono">{s.amount.toFixed(2)}</TableCell>

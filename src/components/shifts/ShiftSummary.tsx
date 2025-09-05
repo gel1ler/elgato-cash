@@ -15,6 +15,7 @@ interface ShiftSummaryProps {
     noncash: number
     transfer: number
     sbp: number
+    certificate: number
   }
 }
 
@@ -72,6 +73,12 @@ function PaymentMethodsSummary({ paymentMethods }: { paymentMethods: ShiftSummar
           value={`${paymentMethods.sbp.toFixed(2)} ₽`}
           color="text-purple-600"
           subtitle={`${((paymentMethods.sbp / (totalCash + totalNonCash)) * 100).toFixed(1)}%`}
+        />
+
+        <StatCard
+          title="Сертификаты"
+          value={`${paymentMethods.certificate.toFixed(2)} ₽`}
+          color="text-gray-600"
         />
       </div>
     </div>

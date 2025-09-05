@@ -1,15 +1,19 @@
-import prisma from '@/lib/prisma'
+import db from '@/lib/db/client'
+import { workers } from '@/lib/db/schema'
+import { asc, desc, sql } from 'drizzle-orm'
 import { CreateWorkerForm, WorkersTable } from '@/components'
 
 async function getWorkers() {
-  const list = await prisma.worker.findMany({ orderBy: [{ active: 'desc' }, { role: 'asc' }, { name: 'asc' }] })
+  const list = await db.query.workers.findMany({
+    orderBy: [desc(workers.active), asc(workers.role), asc(workers.name)]
+  })
   return list.map(w => ({
     id: w.id,
     name: w.name,
     role: w.role,
-    category: w.category,
+    category: w.category ?? null,
     active: w.active,
-    salaryRate: Number((w as any).salaryRate ?? 0.5)
+    salaryRate: Number(w.salaryRate ?? 0.5)
   }))
 }
 

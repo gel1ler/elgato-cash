@@ -1,7 +1,10 @@
+
 'use server'
 
-import prisma from '@/lib/prisma'
+import db from '@/lib/db/client'
+import { workers } from '@/lib/db/schema'
 import { revalidatePath } from 'next/cache'
+import { and, eq } from 'drizzle-orm'
 
 export async function createWorker(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim()
@@ -10,23 +13,23 @@ export async function createWorker(formData: FormData) {
   const salaryRateRaw = String(formData.get('salaryRate') ?? '').trim()
   const salaryRate = salaryRateRaw ? Number(salaryRateRaw) : 0.5
   if (!name) return
-  await prisma.worker.create({ data: { name, role, category, salaryRate } })
+  await db.insert(workers).values({ name, role, category, salaryRate })
   revalidatePath('/workers')
 }
 
 export async function toggleWorker(formData: FormData) {
   const id = Number(formData.get('id'))
   if (!id) return
-  const w = await prisma.worker.findUnique({ where: { id } })
-  if (!w) return
-  await prisma.worker.update({ where: { id }, data: { active: !w.active } })
+  const existing = await db.query.workers.findFirst({ where: (tbl, { eq }) => eq(tbl.id, id) })
+  if (!existing) return
+  await db.update(workers).set({ active: !existing.active }).where(eq(workers.id, id))
   revalidatePath('/workers')
 }
 
 export async function deleteWorker(formData: FormData) {
   const id = Number(formData.get('id'))
   if (!id) return
-  await prisma.worker.delete({ where: { id } })
+  await db.delete(workers).where(eq(workers.id, id))
   revalidatePath('/workers')
 }
 
@@ -36,6 +39,6 @@ export async function updateWorkerSalaryRate(formData: FormData) {
   if (!id || !salaryRateRaw) return
   const salaryRate = Number(salaryRateRaw)
   if (Number.isNaN(salaryRate)) return
-  await prisma.worker.update({ where: { id }, data: { salaryRate } })
+  await db.update(workers).set({ salaryRate }).where(eq(workers.id, id))
   revalidatePath('/workers')
 }

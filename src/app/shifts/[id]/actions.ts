@@ -1,7 +1,9 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+import db from '@/lib/db/client'
+import { shifts, serviceEntries, productSales, payouts } from '@/lib/db/schema'
 import { revalidatePath } from 'next/cache'
+import { and, eq } from 'drizzle-orm'
 
 function toNumber(value: unknown) {
     const n = Number(String(value).replace(',', '.'))
@@ -15,7 +17,7 @@ export async function addWorkerToTable(formData: FormData) {
     if (!shiftId || !workerId) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
     // Просто обновляем страницу - мастер автоматически появится в таблице
@@ -29,7 +31,7 @@ export async function removeWorkerFromTable(formData: FormData) {
     if (!shiftId || !workerId) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
     // Просто обновляем страницу - мастер автоматически исчезнет из таблицы
@@ -45,7 +47,7 @@ export async function quickAddService(formData: FormData) {
     if (!shiftId || !workerId || !service || !method) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
     // Перенаправляем на страницу смены с предзаполненными полями
@@ -65,7 +67,7 @@ export async function addService(formData: FormData) {
     const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.serviceEntry.create({ data: { shiftId, workerId, service, method, amount } })
+    await db.insert(serviceEntries).values({ shiftId, workerId, service, method, amount })
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -78,10 +80,10 @@ export async function addSale(formData: FormData) {
     if (!shiftId || !product || !method || amount <= 0) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.productSale.create({ data: { shiftId, product, method, amount } })
+    await db.insert(productSales).values({ shiftId, product, method, amount })
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -94,10 +96,10 @@ export async function addPayout(formData: FormData) {
     if (!shiftId || amount <= 0) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.payout.create({ data: { shiftId, workerId, amount } })
+    await db.insert(payouts).values({ shiftId, workerId, amount })
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -108,10 +110,10 @@ export async function deleteService(formData: FormData) {
     if (!id || !shiftId) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.serviceEntry.delete({ where: { id } })
+    await db.delete(serviceEntries).where(eq(serviceEntries.id, id))
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -122,10 +124,10 @@ export async function deleteSale(formData: FormData) {
     if (!id || !shiftId) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.productSale.delete({ where: { id } })
+    await db.delete(productSales).where(eq(productSales.id, id))
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -136,10 +138,10 @@ export async function deletePayout(formData: FormData) {
     if (!id || !shiftId) return
 
     // Проверяем, что смена не закрыта
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift || shift.closingCash !== null) return
 
-    await prisma.payout.delete({ where: { id } })
+    await db.delete(payouts).where(eq(payouts.id, id))
     revalidatePath(`/shifts/${shiftId}`)
 }
 
@@ -147,13 +149,19 @@ export async function closeShift(formData: FormData) {
     const shiftId = Number(formData.get('shiftId'))
     if (!shiftId) return
 
-    const shift = await prisma.shift.findUnique({
-        where: { id: shiftId },
-        include: { serviceEntries: true, productSales: true, payouts: true }
-    })
+    const shift = (await db.select().from(shifts).where(eq(shifts.id, shiftId)).limit(1))[0]
     if (!shift) return
 
-    const t = computeTotals(shift)
+    const services = await db.select().from(serviceEntries).where(eq(serviceEntries.shiftId, shiftId))
+    const sales = await db.select().from(productSales).where(eq(productSales.shiftId, shiftId))
+    const payoutList = await db.select().from(payouts).where(eq(payouts.shiftId, shiftId))
+
+    const t = computeTotals({
+        openingCash: shift.openingCash,
+        serviceEntries: services,
+        productSales: sales,
+        payouts: payoutList,
+    })
 
     // Проверяем, что смена еще не закрыта
     if (shift.closingCash !== null) return
@@ -161,7 +169,7 @@ export async function closeShift(formData: FormData) {
     // Проверяем, что остаток не отрицательный
     if (t.cashEnd < 0) return
 
-    await prisma.shift.update({ where: { id: shiftId }, data: { closingCash: t.cashEnd } })
+    await db.update(shifts).set({ closingCash: t.cashEnd }).where(eq(shifts.id, shiftId))
     revalidatePath(`/shifts/${shiftId}`)
 }
 

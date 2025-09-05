@@ -1,4 +1,6 @@
-import prisma from '@/lib/prisma'
+import db from '@/lib/db/client'
+import { serviceEntries, workers as workersTbl, productSales, payouts } from '@/lib/db/schema'
+import { and, asc, eq, gte, lte, sql, inArray } from 'drizzle-orm'
 import { ReportsFilterForm, ReportsStats, WorkersServicesTable, PayrollTable } from '@/components'
 import { Tabs } from '@/components/ui'
 
@@ -9,12 +11,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const start = params.start ? new Date(params.start) : firstDay(new Date())
   const end = params.end ? new Date(params.end) : new Date()
 
-  const svc = await prisma.serviceEntry.groupBy({
-    by: ['workerId', 'method'],
-    where: { shift: { shiftDate: { gte: start, lte: end } } },
-    _sum: { amount: true }
-  })
-  const workers = await prisma.worker.findMany({ where: { id: { in: [...new Set(svc.map((s: { workerId: number }) => s.workerId))] } } })
+  const svc = await db
+    .select({ workerId: serviceEntries.workerId, method: serviceEntries.method, amount: sql`sum(${serviceEntries.amount})`.as('amount') })
+    .from(serviceEntries)
+    .where(and(gte(serviceEntries.createdAt, start), lte(serviceEntries.createdAt, end)))
+    .groupBy(serviceEntries.workerId, serviceEntries.method)
+  const workers = await db.query.workers.findMany({ where: (t) => inArray(t.id, [...new Set(svc.map(s => s.workerId))]) })
   const byWorker = new Map<number, { name: string, cash: number, noncash: number }>()
   for (const row of svc) {
     const w = workers.find((w: { id: number }) => w.id === row.workerId)
@@ -24,33 +26,33 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     else rec.noncash = Number(row._sum.amount ?? 0)
   }
 
-  const sales = await prisma.productSale.groupBy({
-    by: ['method'],
-    where: { shift: { shiftDate: { gte: start, lte: end } } },
-    _sum: { amount: true }
-  })
+  const sales = await db
+    .select({ method: productSales.method, amount: sql`sum(${productSales.amount})`.as('amount') })
+    .from(productSales)
+    .where(and(gte(productSales.createdAt, start), lte(productSales.createdAt, end)))
+    .groupBy(productSales.method)
 
-  const payouts = await prisma.payout.aggregate({
-    where: { shift: { shiftDate: { gte: start, lte: end } } },
-    _sum: { amount: true }
-  })
+  const payoutsAgg = await db
+    .select({ total: sql`coalesce(sum(${payouts.amount}), 0)` })
+    .from(payouts)
+    .where(and(gte(payouts.createdAt, start), lte(payouts.createdAt, end)))
 
   const totalServices = [...byWorker.values()].reduce((sum, r) => sum + r.cash + r.noncash, 0)
-  const totalSales = sales.reduce((sum, s) => sum + Number(s._sum.amount ?? 0), 0)
-  const totalPayouts = Number(payouts._sum.amount ?? 0)
+  const totalSales = sales.reduce((sum, s) => sum + Number((s as any).amount ?? 0), 0)
+  const totalPayouts = Number(payoutsAgg[0]?.total ?? 0)
 
   // Payroll data
-  const workersAll = await prisma.worker.findMany({ where: { active: true }, orderBy: [{ role: 'asc' }, { name: 'asc' }] })
-  const servicesByWorker = await prisma.serviceEntry.groupBy({
-    by: ['workerId'],
-    where: { shift: { shiftDate: { gte: start, lte: end } } },
-    _sum: { amount: true }
-  })
-  const payoutsByWorker = await prisma.payout.groupBy({
-    by: ['workerId'],
-    where: { shift: { shiftDate: { gte: start, lte: end } }, workerId: { not: null } },
-    _sum: { amount: true }
-  })
+  const workersAll = await db.query.workers.findMany({ where: (t, { eq }) => eq(t.active, true), orderBy: (t, { asc }) => [asc(t.role), asc(t.name)] })
+  const servicesByWorker = await db
+    .select({ workerId: serviceEntries.workerId, amount: sql`sum(${serviceEntries.amount})`.as('amount') })
+    .from(serviceEntries)
+    .where(and(gte(serviceEntries.createdAt, start), lte(serviceEntries.createdAt, end)))
+    .groupBy(serviceEntries.workerId)
+  const payoutsByWorker = await db
+    .select({ workerId: payouts.workerId, amount: sql`sum(${payouts.amount})`.as('amount') })
+    .from(payouts)
+    .where(and(gte(payouts.createdAt, start), lte(payouts.createdAt, end), sql`${payouts.workerId} is not null`))
+    .groupBy(payouts.workerId)
   const servicesMap = new Map<number, number>(servicesByWorker.map(r => [r.workerId, Number(r._sum.amount ?? 0)]))
   const payoutsMap = new Map<number, number>(payoutsByWorker.map(r => [r.workerId!, Number(r._sum.amount ?? 0)]))
   const payrollRows = workersAll.map(w => ({

@@ -13,6 +13,7 @@ export function computeTotals(shift: {
   const noncashServices = shift.serviceEntries.filter((e) => e.method === 'noncash').reduce((s, e) => s + Number(e.amount), 0)
   const transferServices = shift.serviceEntries.filter((e) => e.method === 'transfer').reduce((s, e) => s + Number(e.amount), 0)
   const sbpServices = shift.serviceEntries.filter((e) => e.method === 'sbp').reduce((s, e) => s + Number(e.amount), 0)
+  const certificateServices = shift.serviceEntries.filter((e) => e.method === 'certificate').reduce((s, e) => s + Number(e.amount), 0)
 
   const cashSales = shift.productSales.filter((e) => e.method === 'cash').reduce((s, e) => s + Number(e.amount), 0)
   const noncashSales = shift.productSales.filter((e) => e.method === 'noncash').reduce((s, e) => s + Number(e.amount), 0)
@@ -20,6 +21,7 @@ export function computeTotals(shift: {
   const sbpSales = shift.productSales.filter((e) => e.method === 'sbp').reduce((s, e) => s + Number(e.amount), 0)
 
   const totalPayouts = shift.payouts.reduce((s, e) => s + Number(e.amount), 0)
+  // В кассу не идут сертификаты — их исключаем из CashIn
   const totalCashIn = Number(shift.openingCash) + cashServices + cashSales
   const cashEnd = totalCashIn - totalPayouts
 
@@ -28,11 +30,12 @@ export function computeTotals(shift: {
     cash: cashServices + cashSales,
     noncash: noncashServices + noncashSales,
     transfer: transferServices + transferSales,
-    sbp: sbpServices + sbpSales
+    sbp: sbpServices + sbpSales,
+    certificate: certificateServices
   }
 
   // Полные итоги для сводки (включая переводы и СБП)
-  const overallServices = cashServices + noncashServices + transferServices + sbpServices
+  const overallServices = cashServices + noncashServices + transferServices + sbpServices + certificateServices
   const overallSales = cashSales + noncashSales + transferSales + sbpSales
   const overallIncome = overallServices + overallSales
 
@@ -41,6 +44,7 @@ export function computeTotals(shift: {
     noncashServices,
     transferServices,
     sbpServices,
+    certificateServices,
     cashSales,
     noncashSales,
     transferSales,

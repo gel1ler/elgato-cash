@@ -18,6 +18,7 @@ model Worker {
   // Relations
   serviceEntries ServiceEntry[]
   payouts        Payout[]
+  tips           Tip[]
   adminForShifts Shift[]       @relation("AdminOfShift")
 }
 
@@ -33,6 +34,7 @@ model Shift {
   serviceEntries ServiceEntry[]
   productSales   ProductSale[]
   payouts        Payout[]
+  tips           Tip[]
 }
 
 model ServiceEntry {
@@ -69,4 +71,17 @@ model Payout {
   shift     Shift    @relation(fields: [shiftId], references: [id])
   workerId  Int?
   worker    Worker?  @relation(fields: [workerId], references: [id])
+}
+
+model Tip {
+  id        Int      @id @default(autoincrement())
+  amount    Decimal
+  createdAt DateTime @default(now())
+
+  shiftId   Int
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  workerId  Int
+  worker    Worker   @relation(fields: [workerId], references: [id])
+
+  @@unique([shiftId, workerId])
 }
